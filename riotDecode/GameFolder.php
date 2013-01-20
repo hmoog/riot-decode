@@ -29,5 +29,19 @@ class GameFolder {
 
 		return $this->riotArchiveFiles;
 	}
+
+	public function getGameFiles($regex = null) {
+		$riotArchiveFileEntries = [];
+
+		foreach($this->getRiotArchiveFiles() as $version => $riotArchiveFile) {
+			foreach($riotArchiveFile->getFiles($regex) as $path => $riotArchiveFileEntry) {
+				if(!key_exists($path, $riotArchiveFileEntries)) {
+					$riotArchiveFileEntries[$path] = $riotArchiveFileEntry;
+				}
+			}
+		}
+
+		return $riotArchiveFileEntries;
+	}
 }
 ?>

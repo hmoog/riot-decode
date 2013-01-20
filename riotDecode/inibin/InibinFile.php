@@ -1,21 +1,108 @@
 <?php
 namespace riotDecode\inibin;
 
-class InibinFile {
+class InibinFile implements \ArrayAccess {
+	protected static $availableMappers;
+
+	protected $keyMapping;
+
     protected $file;
 
 	protected $values;
 
+	protected $identifiedValues;
+
 	protected $streamPointer = 0;
 
 	public function __construct($file) {
+		if(self::$availableMappers === null) {
+			self::$availableMappers = [];
+
+			foreach(scandir(getcwd() . DIRECTORY_SEPARATOR . 'riotDecode' . DIRECTORY_SEPARATOR . 'inibin' . DIRECTORY_SEPARATOR . 'mapper') as $entry) {
+				if($entry[0] != '.') {
+					$entry = '\\riotDecode\\inibin\\mapper\\' . str_replace('.php', '', $entry);
+
+					self::$availableMappers[] = new $entry();
+				}
+			}
+		}
+
 		$this->file = $file;
 	}
 
-	public function getValues() {
+	public function &getValues($translateKeys = true) {
 		$this->decodeFile();
 
-		return $this->values;
+		if($translateKeys) {
+			if($this->identifiedValues === null) {
+				$matchingMapper = null;
+				foreach(self::$availableMappers as $mapper) {
+					if($mapper->matchesInibinFile($this)) {
+						$matchingMapper = $mapper;
+						break;
+					}
+				}
+
+				if($matchingMapper !== null) {
+					$this->identifiedValues = [];
+
+					foreach($this->getValues(false) as $key => $value) {
+						if(($mapping = $matchingMapper->mapInibinKey($key)) !== null) {
+							$this->identifiedValues[$mapping[0]] = sizeof($mapping) >= 2 ? $mapping[1](key_exists($key, $this->values) ? $this->values[$key] : null) : (key_exists($key, $this->values) ? $this->values[$key] : null);
+						} else {
+							$this->identifiedValues[$key] = $value;
+						}
+					}
+
+					$inibinType = explode('\\', get_class($matchingMapper));
+
+					$this->identifiedValues['INIBIN_TYPE'] = strtoupper(array_pop($inibinType));
+				} else {
+					$this->identifiedValues = $this->values;
+					$this->identifiedValues['INIBIN_TYPE'] = 'UNKNOWN';
+				}
+
+				ksort($this->identifiedValues);
+			}
+
+			return $this->identifiedValues;
+		} else {
+			return $this->values;
+		}
+	}
+
+	public function offsetExists($offset) {
+		return key_exists($offset, $this->getValues());
+	}
+
+	public function offsetGet($offset) {
+		return $this->getValues()[$offset];
+	}
+
+	public function offsetSet($offset, $value) {
+		$this->getValues()[$offset] = $value;
+	}
+
+	public function offsetUnset($offset) {
+		unset($this->getValues()[$offset]);
+	}
+
+	public function __tostring() {
+		$result = '<table border="0" cellspacing="0" cellpadding="3" style="font-size:11px;font-family:arial;sans-serif">'
+		        .   '<thead>'
+		        .     '<tr>'
+		        .       '<td colspan="2" style="background-color:#d1ecff;font-weight:bold;-moz-border-radius: 6px 6px 0 0;-webkit-border-radius: 6px 6px 0 0;border-radius: 6px 6px 0 0;border-bottom:1px solid #ffffff;text-align:center">' . $this->file->getPath() . '</td>'
+		        .     '</tr>'
+		        .   '</thead>'
+		        .   '<tbody>';
+
+		foreach($this->getValues() as $key => $value) {
+			$result .= '<tr><td style="background-color:#edf6fd;border-bottom:1px solid #ffffff;padding-right:40px">' . $key . '</td><td style="background-color:#f7f7f7;border-bottom:1px solid #ffffff;font-style:italic">' . json_encode($value) . '</td></tr>';
+		}
+
+		$result .= '</table>';
+
+		return $result;
 	}
 
 	protected function decodeFile() {
@@ -57,7 +144,7 @@ class InibinFile {
 				0x0020 => function($index, $key, &$values) use (&$content, &$oldstyleOffset) {
 					static $byte;
 
-					$values[$key] = (boolean) (0x1 & ($byte = ($index % 8 == 0) ? $this->readFromStream($content, 'C') : ($byte >> 1)));
+					$values[$key] = (0x1 & ($byte = ($index % 8 == 0) ? $this->readFromStream($content, 'C') : ($byte >> 1)));
 				},
 
 				// 3 byte values ??????????????????????????????????????????????????????????????????
@@ -97,6 +184,8 @@ class InibinFile {
 					$values[$key] = substr($content, $offset, strpos($content, "\x00", $offset) - $offset);
 				}
 			], $dataFormat);
+
+ 			ksort($this->values);
 		}
 	}
 
@@ -109,7 +198,7 @@ class InibinFile {
 
 				$keys = [];
 				for($i = 0; $i < $keyCount; $i++) {
-					$keys[] = (string) $this->readFromStream($content, 'L');
+					$keys[] = sprintf('%u', $this->readFromStream($content, 'L'));
 				}
 
 				foreach($keys as $index => $key) {
