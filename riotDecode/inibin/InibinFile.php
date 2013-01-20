@@ -97,10 +97,11 @@ class InibinFile implements \ArrayAccess {
 		        .   '<tbody>';
 
 		foreach($this->getValues() as $key => $value) {
-			$result .= '<tr><td style="background-color:#edf6fd;border-bottom:1px solid #ffffff;padding-right:40px">' . $key . '</td><td style="background-color:#f7f7f7;border-bottom:1px solid #ffffff;font-style:italic">' . json_encode($value) . '</td></tr>';
+			$result .= '<tr><td style="background-color:#edf6fd;border-bottom:1px solid #ffffff;white-space:nowrap;padding-right:40px">' . $key . '</td><td style="background-color:#f7f7f7;border-bottom:1px solid #ffffff;font-style:italic;width:100%">' . json_encode($value) . '</td></tr>';
 		}
 
-		$result .= '</table>';
+		$result .=   '</tbody>'
+		         . '</table>';
 
 		return $result;
 	}
