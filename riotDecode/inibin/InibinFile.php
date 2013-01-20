@@ -62,7 +62,7 @@ class InibinFile implements \ArrayAccess {
 					$this->identifiedValues['INIBIN_TYPE'] = 'UNKNOWN';
 				}
 
-				ksort($this->identifiedValues);
+				krsort($this->identifiedValues, SORT_NATURAL);
 			}
 
 			return $this->identifiedValues;
@@ -185,7 +185,7 @@ class InibinFile implements \ArrayAccess {
 				}
 			], $dataFormat);
 
- 			ksort($this->values);
+ 			krsort($this->values, SORT_NATURAL);
 		}
 	}
 
