@@ -88,7 +88,7 @@ class InibinFile implements \ArrayAccess {
 	}
 
 	public function __tostring() {
-		$result = '<table border="0" cellspacing="0" cellpadding="3" style="font-size:11px;font-family:arial;sans-serif">'
+		$result = '<table border="0" cellspacing="0" cellpadding="3" style="font-size:11px;font-family:arial;sans-serif;width:100%">'
 		        .   '<thead>'
 		        .     '<tr>'
 		        .       '<td colspan="2" style="background-color:#d1ecff;font-weight:bold;-moz-border-radius: 6px 6px 0 0;-webkit-border-radius: 6px 6px 0 0;border-radius: 6px 6px 0 0;border-bottom:1px solid #ffffff;text-align:center">' . $this->file->getPath() . '</td>'
