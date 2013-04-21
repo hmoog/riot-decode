@@ -53,7 +53,7 @@
 
                 $inibinFile = $path;
             }
-            echo '>Champion: ' . $champion . '</option>';
+            echo '>' . $champion . '</option>';
         }
         echo '</select>';
     } else {
@@ -61,7 +61,7 @@
 
         foreach($availableChampions as $champion => $path) {
             if(key_exists('CHAMPION', $_GET) && $path == $_GET['CHAMPION']) {
-                echo 'Champion: ' . $champion;
+                echo '' . $champion;
 
                 $inibinFile = $path;
             }

@@ -17,16 +17,14 @@ class GameFolder {
 			$availableChampions = [];
 
 			foreach($this->getGameFiles("*.inibin") as $path => $riotArchiveFileEntry) {
-				if(($decodedFile = $riotArchiveFileEntry->decode()) instanceof \riotDecode\inibin\InibinFile && $decodedFile['INIBIN_TYPE'] == 'CHAMPION') {
-					$availableChampions[pathinfo($path)['filename']] = $path;
-				}
+			    if(preg_match('!DATA/Characters/[^/]+/[^/\\.]+\\.inibin!', $path)) $availableChampions[pathinfo($path)['filename']] = $path;
 			}
 
 			$file = fopen(getcwd() . DIRECTORY_SEPARATOR . 'riotDecode' . DIRECTORY_SEPARATOR . '_private' . DIRECTORY_SEPARATOR . 'cache.php', 'w+');
 			fwrite($file, '<?php $availableChampions = unserialize("' . str_replace('"', '\\"', serialize($availableChampions)) . '"); ?>');
 			fclose($file);
 		}
-		
+
 		return $availableChampions;
 	}
 
