@@ -2,219 +2,216 @@
 namespace riotDecode\inibin;
 
 class InibinFile implements \ArrayAccess {
-	protected static $availableMappers;
+    protected static $availableMappers;
 
-	protected $keyMapping;
+    protected $keyMapping;
 
     protected $file;
 
-	protected $values;
+    protected $values;
 
-	protected $identifiedValues;
+    protected $identifiedValues;
 
-	protected $streamPointer = 0;
+    protected $streamPointer = 0;
 
-	public function __construct($file) {
-		if(self::$availableMappers === null) {
-			self::$availableMappers = [];
+    public function __construct($file) {
+        if(self::$availableMappers === null) {
+            self::$availableMappers = [];
 
-			foreach(scandir(getcwd() . DIRECTORY_SEPARATOR . 'riotDecode' . DIRECTORY_SEPARATOR . 'inibin' . DIRECTORY_SEPARATOR . 'mapper') as $entry) {
-				if($entry[0] != '.') {
-					$entry = '\\riotDecode\\inibin\\mapper\\' . str_replace('.php', '', $entry);
+            foreach(scandir(getcwd() . DIRECTORY_SEPARATOR . 'riotDecode' . DIRECTORY_SEPARATOR . 'inibin' . DIRECTORY_SEPARATOR . 'mapper') as $entry) {
+                if($entry[0] != '.') {
+                    $entry = '\\riotDecode\\inibin\\mapper\\' . str_replace('.php', '', $entry);
 
-					self::$availableMappers[] = new $entry();
-				}
-			}
-		}
+                    self::$availableMappers[] = new $entry();
+                }
+            }
+        }
 
-		$this->file = $file;
-	}
+        $this->file = $file;
+    }
 
-	public function &getValues($translateKeys = true) {
-		$this->decodeFile();
+    public function &getValues($translateKeys = true) {
+        $this->decodeFile();
 
-		if($translateKeys) {
-			if($this->identifiedValues === null) {
-				$matchingMapper = null;
-				foreach(self::$availableMappers as $mapper) {
-					if($mapper->matchesInibinFile($this)) {
-						$matchingMapper = $mapper;
-						break;
-					}
-				}
+        if($translateKeys) {
+            if($this->identifiedValues === null) {
+                $this->identifiedValues = [];
 
-				if($matchingMapper !== null) {
-					$this->identifiedValues = [];
+                foreach($this->getValues(false) as $key => $value) {
+                    if(($mapping = KeyMapper::getStringInibinKey($key)) !== null) {
+                        if(!key_exists($mapping[0], $this->identifiedValues)) {
+                            $this->identifiedValues[$mapping[0]] = [];
+                        }
 
-					foreach($this->getValues(false) as $key => $value) {
-						if(($mapping = $matchingMapper->mapInibinKey($key)) !== null) {
-							$this->identifiedValues[$mapping[0]] = sizeof($mapping) >= 2 ? $mapping[1](key_exists($key, $this->values) ? $this->values[$key] : null) : (key_exists($key, $this->values) ? $this->values[$key] : null);
-						} else {
-							$this->identifiedValues[$key] = $value;
-						}
-					}
+                        $this->identifiedValues[$mapping[0]][$mapping[1]] = $this->values[$key];
+                    } else {
+                        if(!key_exists($mapping[0], $this->identifiedValues)) {
+                            $this->identifiedValues['Irrelevant'] = [];
+                        }
 
-					$inibinType = explode('\\', get_class($matchingMapper));
+                        $this->identifiedValues['Irrelevant'][$key] = $value;
+                    }
+                }
 
-					$this->identifiedValues['INIBIN_TYPE'] = strtoupper(array_pop($inibinType));
-				} else {
-					$this->identifiedValues = $this->values;
-					$this->identifiedValues['INIBIN_TYPE'] = 'UNKNOWN';
-				}
+                krsort($this->identifiedValues, SORT_NATURAL);
+            }
 
-				krsort($this->identifiedValues, SORT_NATURAL);
-			}
+            return $this->identifiedValues;
+        } else {
+            return $this->values;
+        }
+    }
 
-			return $this->identifiedValues;
-		} else {
-			return $this->values;
-		}
-	}
+    public function offsetExists($offset) {
+        return key_exists($offset, $this->getValues());
+    }
 
-	public function offsetExists($offset) {
-		return key_exists($offset, $this->getValues());
-	}
+    public function offsetGet($offset) {
+        return $this->getValues()[$offset];
+    }
 
-	public function offsetGet($offset) {
-		return $this->getValues()[$offset];
-	}
+    public function offsetSet($offset, $value) {
+        $this->getValues()[$offset] = $value;
+    }
 
-	public function offsetSet($offset, $value) {
-		$this->getValues()[$offset] = $value;
-	}
+    public function offsetUnset($offset) {
+        unset($this->getValues()[$offset]);
+    }
 
-	public function offsetUnset($offset) {
-		unset($this->getValues()[$offset]);
-	}
+    public function __tostring() {
+        $result = '<table border="0" cellspacing="0" cellpadding="3" style="font-size:11px;font-family:arial;sans-serif;width:100%">'
+                .   '<thead>'
+                .     '<tr>'
+                .       '<td colspan="2" style="background-color:#c7e1f3;font-weight:bold;-moz-border-radius: 6px 6px 0 0;-webkit-border-radius: 6px 6px 0 0;border-radius: 6px 6px 0 0;border-bottom:1px solid #ffffff;text-align:center">' . $this->file->getPath() . '</td>'
+                .     '</tr>'
+                .   '</thead>'
+                .   '<tbody>';
 
-	public function __tostring() {
-		$result = '<table border="0" cellspacing="0" cellpadding="3" style="font-size:11px;font-family:arial;sans-serif;width:100%">'
-		        .   '<thead>'
-		        .     '<tr>'
-		        .       '<td colspan="2" style="background-color:#d1ecff;font-weight:bold;-moz-border-radius: 6px 6px 0 0;-webkit-border-radius: 6px 6px 0 0;border-radius: 6px 6px 0 0;border-bottom:1px solid #ffffff;text-align:center">' . $this->file->getPath() . '</td>'
-		        .     '</tr>'
-		        .   '</thead>'
-		        .   '<tbody>';
+        foreach($this->getValues() as $groupName => $values) {
+            $result .= '<tr>';
+            $result .=   '<td colspan="2" style="background-color:#d1ecff;font-weight:bold;border-bottom:1px solid #ffffff;text-align:center">' . $groupName . '</td>';
+            $result .= '</tr>';
 
-		foreach($this->getValues() as $key => $value) {
-			$result .= '<tr><td style="background-color:#edf6fd;border-bottom:1px solid #ffffff;white-space:nowrap;padding-right:40px">' . $key . '</td><td style="background-color:#f7f7f7;border-bottom:1px solid #ffffff;font-style:italic;width:100%">' . json_encode($value) . '</td></tr>';
-		}
+            foreach($values as $key => $value) {
+                $result .= '<tr><td style="background-color:#edf6fd;border-bottom:1px solid #ffffff;white-space:nowrap;padding-right:40px">' . $key . '</td><td style="background-color:#f7f7f7;border-bottom:1px solid #ffffff;font-style:italic;width:100%">' . json_encode($value) . '</td></tr>';
+            }
+        }
 
-		$result .=   '</tbody>'
-		         . '</table>';
+        $result .=   '</tbody>'
+                 . '</table>';
 
-		return $result;
-	}
+        return $result;
+    }
 
-	protected function decodeFile() {
-		if($this->values === null) {
-			$content        = ($this->file instanceof \riotDecode\raf\RiotArchiveFileEntry) ? $this->file->getContent() : (@file_get_contents($this->file) or die('COULD NOT FIND INIBIN FILE: ' . $this->file));
+    protected function decodeFile() {
+        if($this->values === null) {
+            $content        = ($this->file instanceof \riotDecode\raf\RiotArchiveFileEntry) ? $this->file->getContent() : (@file_get_contents($this->file) or die('COULD NOT FIND INIBIN FILE: ' . $this->file));
 
-			$version        = $this->readFromStream($content, 'C');
-			$oldLength      = $this->readFromStream($content, 'S');
-			$dataFormat     = $this->readFromStream($content, 'S');
-			$oldstyleOffset = strlen($content) - $oldLength;
+            $version        = $this->readFromStream($content, 'C');
+            $oldLength      = $this->readFromStream($content, 'S');
+            $dataFormat     = $this->readFromStream($content, 'S');
+            $oldstyleOffset = strlen($content) - $oldLength;
 
-			$this->values = $this->decodeSegments($content, [
-				// decode u32
-				0x0001 => function($index, $key, &$values) use (&$content, &$oldstyleOffset) {
-					$values[$key] = $this->readFromStream($content, 'L');
-				},
+            $this->values = $this->decodeSegments($content, [
+                // decode u32
+                0x0001 => function($index, $key, &$values) use (&$content, &$oldstyleOffset) {
+                    $values[$key] = $this->readFromStream($content, 'L');
+                },
 
-				// decode float
-				0x0002 => function($index, $key, &$values) use (&$content, &$oldstyleOffset) {
-					$values[$key] = round($this->readFromStream($content, 'f'), 5);
-				},
+                // decode float
+                0x0002 => function($index, $key, &$values) use (&$content, &$oldstyleOffset) {
+                    $values[$key] = round($this->readFromStream($content, 'f'), 5);
+                },
 
-				// decode u8/10
-				0x0004 => function($index, $key, &$values) use (&$content, &$oldstyleOffset) {
-					$values[$key] = $this->readFromStream($content, 'C') * 0.1;
-				},
+                // decode u8/10
+                0x0004 => function($index, $key, &$values) use (&$content, &$oldstyleOffset) {
+                    $values[$key] = $this->readFromStream($content, 'C') * 0.1;
+                },
 
-				// decode u16
-				0x0008 => function($index, $key, &$values) use (&$content, &$oldstyleOffset) {
-					$values[$key] = $this->readFromStream($content, 'S');
-				},
+                // decode u16
+                0x0008 => function($index, $key, &$values) use (&$content, &$oldstyleOffset) {
+                    $values[$key] = $this->readFromStream($content, 'S');
+                },
 
-				// decode u8
-				0x0010 => function($index, $key, &$values) use (&$content, &$oldstyleOffset) {
-					$values[$key] = 0xff & $this->readFromStream($content, 'C');
-				},
+                // decode u8
+                0x0010 => function($index, $key, &$values) use (&$content, &$oldstyleOffset) {
+                    $values[$key] = 0xff & $this->readFromStream($content, 'C');
+                },
 
-				// decode boolean
-				0x0020 => function($index, $key, &$values) use (&$content, &$oldstyleOffset) {
-					static $byte;
+                // decode boolean
+                0x0020 => function($index, $key, &$values) use (&$content, &$oldstyleOffset) {
+                    static $byte = null;
 
-					$values[$key] = (0x1 & ($byte = ($index % 8 == 0) ? $this->readFromStream($content, 'C') : ($byte >> 1)));
-				},
+                    $values[$key] = (0x1 & ($byte = ($index % 8 == 0) ? $this->readFromStream($content, 'C') : ($byte >> 1)));
+                },
 
-				// 3 byte values ??????????????????????????????????????????????????????????????????
-				0x0040 => function($index, $key, &$values) use (&$content, &$oldstyleOffset) {
-					$values[$key] = [$this->readFromStream($content, 'C'), $this->readFromStream($content, 'C'), $this->readFromStream($content, 'C')];
-				},
+                // 3 byte values ??????????????????????????????????????????????????????????????????
+                0x0040 => function($index, $key, &$values) use (&$content, &$oldstyleOffset) {
+                    $values[$key] = [$this->readFromStream($content, 'C'), $this->readFromStream($content, 'C'), $this->readFromStream($content, 'C')];
+                },
 
-				// 12 byte values ?????????????????????????????????????????????????????????????????
-				0x0080 => function($index, $key, &$values) use (&$content, &$oldstyleOffset) {
-					$values[$key] = [$this->readFromStream($content, 'L'), $this->readFromStream($content, 'L'), $this->readFromStream($content, 'L')];
-				},
+                // 12 byte values ?????????????????????????????????????????????????????????????????
+                0x0080 => function($index, $key, &$values) use (&$content, &$oldstyleOffset) {
+                    $values[$key] = [$this->readFromStream($content, 'L'), $this->readFromStream($content, 'L'), $this->readFromStream($content, 'L')];
+                },
 
-				// 2 byte values ??????????????????????????????????????????????????????????????????
-				0x0100 => function($index, $key, &$values) use (&$content, &$oldstyleOffset) {
-					$values[$key] = $this->readFromStream($content, 'S');
-				},
+                // 2 byte values ??????????????????????????????????????????????????????????????????
+                0x0100 => function($index, $key, &$values) use (&$content, &$oldstyleOffset) {
+                    $values[$key] = $this->readFromStream($content, 'S');
+                },
 
-				// 8 byte values ??????????????????????????????????????????????????????????????????
-				0x0200 => function($index, $key, &$values) use (&$content, &$oldstyleOffset) {
-					$values[$key] = [$this->readFromStream($content, 'S'), $this->readFromStream($content, 'S'), $this->readFromStream($content, 'S'), $this->readFromStream($content, 'S')];
-				},
+                // 8 byte values ??????????????????????????????????????????????????????????????????
+                0x0200 => function($index, $key, &$values) use (&$content, &$oldstyleOffset) {
+                    $values[$key] = [$this->readFromStream($content, 'S'), $this->readFromStream($content, 'S'), $this->readFromStream($content, 'S'), $this->readFromStream($content, 'S')];
+                },
 
-				// 4-byte color values ????????????????????????????????????????????????????????????
-				0x0400 => function($index, $key, &$values) use (&$content, &$oldstyleOffset) {
-					$values[$key] = $this->readFromStream($content, 'L');
-				},
+                // 4-byte color values ????????????????????????????????????????????????????????????
+                0x0400 => function($index, $key, &$values) use (&$content, &$oldstyleOffset) {
+                    $values[$key] = $this->readFromStream($content, 'L');
+                },
 
-				// 16 bytes values ????????????????????????????????????????????????????????????????
-				0x0800 => function($index, $key, &$values) use (&$content, &$oldstyleOffset) {
-					$values[$key] = [$this->readFromStream($content, 'L'), $this->readFromStream($content, 'L'), $this->readFromStream($content, 'L'), $this->readFromStream($content, 'L')];
-				},
+                // 16 bytes values ????????????????????????????????????????????????????????????????
+                0x0800 => function($index, $key, &$values) use (&$content, &$oldstyleOffset) {
+                    $values[$key] = [$this->readFromStream($content, 'L'), $this->readFromStream($content, 'L'), $this->readFromStream($content, 'L'), $this->readFromStream($content, 'L')];
+                },
 
-				// string values
-				0x1000 => function($index, $key, &$values) use (&$content, &$oldstyleOffset) {
-					$offset = $oldstyleOffset + $this->readFromStream($content, 'S');
+                // string values
+                0x1000 => function($index, $key, &$values) use (&$content, &$oldstyleOffset) {
+                    $offset = $oldstyleOffset + $this->readFromStream($content, 'S');
 
-					$values[$key] = substr($content, $offset, strpos($content, "\x00", $offset) - $offset);
-				}
-			], $dataFormat);
+                    $values[$key] = substr($content, $offset, strpos($content, "\x00", $offset) - $offset);
+                }
+            ], $dataFormat);
 
- 			krsort($this->values, SORT_NATURAL);
-		}
-	}
+             krsort($this->values, SORT_NATURAL);
+        }
+    }
 
-	protected function decodeSegments(&$content, $decoder, $dataFormat) {
-		$values = [];
+    protected function decodeSegments(&$content, $decoder, $dataFormat) {
+        $values = [];
 
-		foreach($decoder as $bitMask => $decodeFunction) {
-			if(($dataFormat & $bitMask) != 0) {
-				$keyCount = $this->readFromStream($content, 'S');
+        foreach($decoder as $bitMask => $decodeFunction) {
+            if(($dataFormat & $bitMask) != 0) {
+                $keyCount = $this->readFromStream($content, 'S');
 
-				$keys = [];
-				for($i = 0; $i < $keyCount; $i++) {
-					$keys[] = sprintf('%u', $this->readFromStream($content, 'L'));
-				}
+                $keys = [];
+                for($i = 0; $i < $keyCount; $i++) {
+                    $keys[] = sprintf('%u', $this->readFromStream($content, 'L'));
+                }
 
-				foreach($keys as $index => $key) {
-					$decodeFunction($index, $key, $values);
-				}
-			}
-		}
+                foreach($keys as $index => $key) {
+                    $decodeFunction($index, $key, $values);
+                }
+            }
+        }
 
-		return $values;
-	}
+        return $values;
+    }
 
-	protected function readFromStream(&$content, $formatString) {
-		static $formatLengths = ['C' => 1, 'S' => 2, 'L' => 4, 'f' => 4];
+    protected function readFromStream(&$content, $formatString) {
+        static $formatLengths = ['C' => 1, 'S' => 2, 'L' => 4, 'f' => 4];
 
-		return unpack($formatString, substr($content, ($this->streamPointer = $this->streamPointer + $formatLengths[$formatString]) - $formatLengths[$formatString], $formatLengths[$formatString]))[1];
-	}
+        return unpack($formatString, substr($content, ($this->streamPointer = $this->streamPointer + $formatLengths[$formatString]) - $formatLengths[$formatString], $formatLengths[$formatString]))[1];
+    }
 }
 ?>

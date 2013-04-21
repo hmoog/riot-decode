@@ -10,6 +10,26 @@ class GameFolder {
 		$this->path = preg_replace("![\\\\//]+$!", "", $path);
 	}
 
+	public function getChampions() {
+		@include(getcwd() . DIRECTORY_SEPARATOR . 'riotDecode' . DIRECTORY_SEPARATOR . '_private' . DIRECTORY_SEPARATOR . 'cache.php');
+
+		if(!isset($availableChampions)) {
+			$availableChampions = [];
+
+			foreach($this->getGameFiles("*.inibin") as $path => $riotArchiveFileEntry) {
+				if(($decodedFile = $riotArchiveFileEntry->decode()) instanceof \riotDecode\inibin\InibinFile && $decodedFile['INIBIN_TYPE'] == 'CHAMPION') {
+					$availableChampions[pathinfo($path)['filename']] = $path;
+				}
+			}
+
+			$file = fopen(getcwd() . DIRECTORY_SEPARATOR . 'riotDecode' . DIRECTORY_SEPARATOR . '_private' . DIRECTORY_SEPARATOR . 'cache.php', 'w+');
+			fwrite($file, '<?php $availableChampions = unserialize("' . str_replace('"', '\\"', serialize($availableChampions)) . '"); ?>');
+			fclose($file);
+		}
+		
+		return $availableChampions;
+	}
+
 	public function getRiotArchiveFiles() {
 		if($this->riotArchiveFiles === null) {
 			$this->riotArchiveFiles = [];
