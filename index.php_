@@ -1,0 +1,259 @@
+<pre>
+<?php
+    // setup php environment
+    set_time_limit(0);
+    spl_autoload_register();
+
+    // remove output buffer
+    ob_end_clean();
+
+    // create game folder object
+    $gameFolder = new \riotDecode\GameFolder('C:\\Riot Games\\League of Legends\\');
+/*
+    $dataFilter = [
+        'SpellData' => [
+            'MissileEffect' => 'string',
+            'AfterEffectName' => 'string',
+            'MissileSpeed' => 'float',
+            'MissileMaxSpeed' => 'float',
+            'MissileMinSpeed' => 'float'
+        ]
+    ];
+
+    $spells = [];
+
+    foreach($gameFolder->getGameFiles('!/Spells/([^/]+)\.inibin$!') as $spellFile) {
+        if(preg_match('!/Spells/([^/]+)\.inibin$!', $spellFile->getPath(), $matches)) {
+            if(!key_exists($matches[1], $spells)) {
+                $filteredInibinValues = [];
+                $inibinValues = $spellFile->decode()->getValues();
+
+                foreach($dataFilter as $sectionName => $section) {
+                    foreach($section as $key => $type) {
+                        if(key_exists($sectionName, $inibinValues) && key_exists($key, $inibinValues[$sectionName])) {
+                            $value = $inibinValues[$sectionName][$key];
+
+                            settype($value, $type);
+
+                            $filteredInibinValues[$sectionName . ':' . $key] = var_export($value, true);
+                        }
+                    }
+                }
+
+                $spells[$matches[1]] = $filteredInibinValues;
+            }
+       }
+    }
+
+    $output = '_G.SpellDatabase = {';
+    foreach($spells as $spellName => $inibinValues) {
+        $output .= '["' . $spellName . '"]={';
+
+        foreach ($inibinValues as $key => $value) {
+            $output .= '["' . $key . '"]=' . $value . ',';
+        }
+
+        $output .= '},';
+    }
+    $output .= '}';
+
+    echo $output;
+
+    #die();
+*/
+/*
+    $dataFilter = [
+        'Data' => [
+            'AttackDelayOffsetPercent' => 'float',
+            'CritAttack_AttackDelayOffsetPercent' => 'float',
+            'AttackDelayCastOffsetPercent' => 'float',
+            'CritAttack_AttackDelayCastOffsetPercent' => 'float',
+            'CritDamageBonus' => 'float',
+            'GameplayCollisionRadius' => 'float',
+            'PathfindingCollisionRadius' => 'float'
+        ]
+    ];
+
+    $units = [];
+
+    foreach($gameFolder->getGameFiles('!^DATA/Characters/([^/]+)/\\1\.inibin$!') as $unitFile) {
+        if(preg_match('!^DATA/Characters/([^/]+)/\\1\.inibin$!', $unitFile->getPath(), $matches)) {
+            if(!key_exists($matches[1], $units)) {
+                $filteredInibinValues = [];
+                $inibinValues = $unitFile->decode()->getValues();
+
+                foreach($dataFilter as $sectionName => $section) {
+                    foreach($section as $key => $type) {
+                        if(key_exists($sectionName, $inibinValues) && key_exists($key, $inibinValues[$sectionName])) {
+                            $value = $inibinValues[$sectionName][$key];
+
+                            settype($value, $type);
+
+                            $filteredInibinValues[$sectionName . ':' . $key] = $value;
+                        }
+                    }
+                }
+
+                $units[$matches[1]] = $filteredInibinValues;
+            }
+       }
+    }
+
+    $output = '_G.UnitDatabase = {';
+    foreach($units as $unitName => $inibinValues) {
+        $output .= '["' . $unitName . '"]={';
+
+        foreach ($inibinValues as $key => $value) {
+            $output .= '["' . $key . '"]=' . $value . ',';
+        }
+
+        $output .= '},';
+    }
+    $output .= '}';
+
+    ob_end_clean();
+
+    echo $output;
+
+    #die();
+
+    $attacks = [];
+
+    foreach($gameFolder->getGameFiles('!(?:(?:[cC][rR][iI][tT][aA][tT][tT][aA][cC][kK])|(?:[bB][aA][sS][iI][cC][aA][tT][tT][aA][cC][kK]))[0-9]*\\.inibin$!') as $gameFile) {
+        if(preg_match('!(([^/]+)(?:(?:[cC][rR][iI][tT][aA][tT][tT][aA][cC][kK])|(?:[bB][aA][sS][iI][cC][aA][tT][tT][aA][cC][kK]))[0-9]*)\\.inibin$!', $gameFile->getPath(), $matches)) {
+            if(!key_exists($matches[2], $units)) {
+                foreach($gameFolder->getGameFiles($matches[2] . '/' . $matches[2] . '.inibin') as $unitFile) {
+                    echo $unitFile->getPath() . '<br />';
+                }
+                $units[$matches[2]] = $matches[2];
+            }
+
+            /*
+            if(key_exists($matches[1], $attacks)) {
+                echo 'FEHLER @ ' . $gameFile->getPath() . ' != ' . $attacks[$matches[1]] . '<br />';
+            } else {
+                $attacks[$matches[1]] = $gameFile->getPath();
+            }
+            * /
+        }
+        #echo $gameFile->getPath() . '<br />';
+    }
+
+    #die();
+*/
+    // retrieve available champions
+    $availableChampions = $gameFolder->getChampions();
+/*
+    foreach($gameFolder->getGameFiles('inibin|troybin') as $path => $file) {
+        foreach($file->decode()->getValues() as $group => $values) {
+            foreach($values as $key => $value) {
+                if($value == '1.6') {
+                    echo $path . " => " . $group . " ][ " . $key . "<br />";
+                }
+            }
+        }
+    }
+    */
+/*
+    $smallestValue = 1;
+    $highestValue = -1;
+    $closestDistValue = 1;
+    foreach($availableChampions as $champion => $path) {
+        $gameFile = $gameFolder->getGameFile($path)->decode();
+        $value = $gameFile['Data']['AttackDelayCastOffsetPercent'];
+        echo $champion . ' = ' . $value . '<br />';
+        $closestDistValue = min(abs($value-0), $closestDistValue);
+        $smallestValue = min($value, $smallestValue);
+        $highestValue = max($value, $highestValue);
+    }
+
+    echo '<hr />';
+    echo $closestDistValue . '<br />';
+    echo $smallestValue . '<br />';
+    echo $highestValue . '<br />';
+
+    die();
+*/
+    $inibinFile = null;
+
+    // list champions
+    echo '<form action="index.php" method="GET" style="display:inline">';
+
+    if(!key_exists('SPELL', $_GET)) {
+        echo '<select name="CHAMPION" onChange="this.form.submit()">';
+        foreach($availableChampions as $champion => $path) {
+            echo '<option value="' . $path . '"';
+            if(key_exists('CHAMPION', $_GET) && $path == $_GET['CHAMPION']) {
+                echo ' selected';
+
+                $inibinFile = $path;
+            }
+            echo '>' . $champion . '</option>';
+        }
+        echo '</select>';
+    } else {
+        echo '<input type="hidden" name="CHAMPION" value="' . (key_exists('CHAMPION', $_GET) ? $_GET['CHAMPION'] : '') . '" /><a href="index.php?CHAMPION=' . (key_exists('CHAMPION', $_GET) ? $_GET['CHAMPION'] : '') . '">';
+
+        foreach($availableChampions as $champion => $path) {
+            if(key_exists('CHAMPION', $_GET) && $path == $_GET['CHAMPION']) {
+                echo '' . $champion;
+
+                $inibinFile = $path;
+            }
+        }
+
+        echo '</a>';
+    }
+
+    // decode champion data
+    if($inibinFile !== null && ($gameFile = $gameFolder->getGameFile($inibinFile)) !== null && ($decodedFile = $gameFile->decode()) instanceof \riotDecode\inibin\InibinFile) {
+        if(key_exists('SPELL', $_GET)) {
+            $availableSpells = [
+                $decodedFile['Data']['Spell1'] => $decodedFile['Data']['Spell1'] . '.inibin',
+                $decodedFile['Data']['Spell2'] => $decodedFile['Data']['Spell2'] . '.inibin',
+                $decodedFile['Data']['Spell3'] => $decodedFile['Data']['Spell3'] . '.inibin',
+                $decodedFile['Data']['Spell4'] => $decodedFile['Data']['Spell4'] . '.inibin'
+            ];
+
+            echo ' &raquo; ';
+
+            echo '<select name="SPELL" onChange="this.form.submit()">';
+            foreach($availableSpells as $spell => $path) {
+                echo '<option value="' . $path . '"';
+                if(key_exists('SPELL', $_GET) && $path == $_GET['SPELL']) {
+                    echo ' selected';
+
+                    $inibinFile = $path;
+                }
+                echo '>Spell: ' . $spell . '</option>';
+            }
+            echo '</select>';
+
+            $inibinFile = $_GET['SPELL'];
+        }
+
+        echo '</form><hr />';
+    }
+
+    if($inibinFile !== null && ($gameFile = $gameFolder->getGameFile($inibinFile)) !== null && ($decodedFile = $gameFile->decode()) instanceof \riotDecode\inibin\InibinFile) {
+        echo $gameFile->getPath();
+
+        if(!key_exists('SPELL', $_GET)) {
+            echo  '<table border="0" cellspacing="0" cellpadding="3" style="font-size:11px;font-family:arial;sans-serif;width:100%">';
+            echo    '<thead>';
+            echo      '<tr>';
+            echo        '<td colspan="2" style="background-color:#c7e1f3;font-weight:bold;-moz-border-radius: 6px 6px 0 0;-webkit-border-radius: 6px 6px 0 0;border-radius: 6px 6px 0 0;border-bottom:1px solid #ffffff;text-align:center">Subfiles</td>';
+            echo      '</tr>';
+            echo    '</thead>';
+            echo   '<tbody>';
+            echo     '<tr><td style="background-color:#edf6fd;border-bottom:1px solid #ffffff;white-space:nowrap;padding-right:40px">Spells</td><td style="background-color:#f7f7f7;border-bottom:1px solid #ffffff;font-style:italic;width:100%"><a href="index.php?CHAMPION=' . (key_exists('CHAMPION', $_GET) ? $_GET['CHAMPION'] : '') . '&SPELL=' . urlencode($decodedFile['Data']['Spell1'] . '.inibin') . '">' . $decodedFile['Data']['Spell1'] . '</a> <a href="index.php?CHAMPION=' . (key_exists('CHAMPION', $_GET) ? $_GET['CHAMPION'] : '') . '&SPELL=' . urlencode($decodedFile['Data']['Spell2'] . '.inibin') . '">' . $decodedFile['Data']['Spell2'] . '</a> <a href="index.php?CHAMPION=' . (key_exists('CHAMPION', $_GET) ? $_GET['CHAMPION'] : '') . '&SPELL=' . urlencode($decodedFile['Data']['Spell3'] . '.inibin') . '">' . $decodedFile['Data']['Spell3'] . '</a> <a href="index.php?CHAMPION=' . (key_exists('CHAMPION', $_GET) ? $_GET['CHAMPION'] : '') . '&SPELL=' . urlencode($decodedFile['Data']['Spell4'] . '.inibin') . '">' . $decodedFile['Data']['Spell4'] . '</a></td></tr>';
+            echo   '</tbody>';
+            echo '</table>';
+            echo '<br />';
+        }
+
+        echo $decodedFile;
+    } else {
+        #echo '</form><hr />';
+    }
+?>
