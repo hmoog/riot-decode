@@ -4,7 +4,7 @@
         <title>RIOT DECODE</title>
     </head>
 
-    <frameset cols="200,*" frameborder="1" border="1" framespacing="0">
+    <frameset cols="400,*" frameborder="1" border="1" framespacing="0">
         <frame name="menu" src="tree.php" marginheight="0" marginwidth="0" scrolling="auto">
         <frame name="content" src="content.php" marginheight="0" marginwidth="0" scrolling="auto">
 

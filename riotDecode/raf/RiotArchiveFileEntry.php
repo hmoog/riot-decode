@@ -56,20 +56,12 @@ class RiotArchiveFileEntry {
 
             try {
                 if(class_exists($decoderClassName, true)) {
-                echo $this->getPath() . '<br />';
-                echo $this->getContent() . '<br />';
-
                     return new $decoderClassName($this);
                 } else {
-                    echo $this->getPath() . '<br />';
-                    echo $this->getContent() . '<br />';
-                    #throw new \Exception("no decoder for " . $pathInfo['extension'] . " files found");
+                    echo $this->getContent();
                 }
             } catch(\Exception $exception) {
-                echo $this->getPath() . '<br />';
-                echo $this->getContent() . '<br />';
-
-                #throw new \Exception("no decoder for " . $pathInfo['extension'] . " files found");
+                echo $this->getContent();
             }
         }
     }

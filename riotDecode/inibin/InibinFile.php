@@ -183,7 +183,7 @@ class InibinFile implements \ArrayAccess {
                 }
             ], $dataFormat);
 
-             krsort($this->values, SORT_NATURAL);
+            krsort($this->values, SORT_NATURAL);
         }
     }
 

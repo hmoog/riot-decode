@@ -35,8 +35,8 @@ class GameFolder {
 			foreach(scandir($this->path . '\\RADS\\projects\\lol_game_client\\filearchives\\') as $versionFolder) {
 				if(preg_match("/([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+)/", $versionFolder, $matches)) {
 					foreach(scandir($this->path . '\\RADS\\projects\\lol_game_client\\filearchives\\' . $matches[1] . '\\') as $potentialRiotArchiveFile) {
-						if(preg_match("/\\.raf$/", $potentialRiotArchiveFile)) {
-							$this->riotArchiveFiles[$matches[1]] = new \riotDecode\raf\RiotArchiveFile($this->path . '\\RADS\\projects\\lol_game_client\\filearchives\\' . $matches[1] . '\\' . $potentialRiotArchiveFile);
+						if(preg_match("/^(.*)\\.raf$/", $potentialRiotArchiveFile, $matches1)) {
+							$this->riotArchiveFiles[$matches[1] . '\\' . $matches1[1]] = new \riotDecode\raf\RiotArchiveFile($this->path . '\\RADS\\projects\\lol_game_client\\filearchives\\' . $matches[1] . '\\' . $potentialRiotArchiveFile);
 						}
 					}
 				}
